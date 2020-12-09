@@ -10,7 +10,6 @@ Kr makes use of some of the functions developed in Krawl and adds extra function
 
 ### How to use kr?
 1. Place the program to /usr/local/bin/kr and make sure you have execution rights.
-e.g. `curl -L -O https://github.com/osodevops/kr/main/kr`
 2. Invoke the program by typing "kr" at command line.
 3. Program collects and displays all container error log entries found for the
 EKS cluster which you are currently connected to.
@@ -18,9 +17,10 @@ EKS cluster which you are currently connected to.
 5. If no error entries are found the program simply displays the current date.
 
 ### User-definable variables
-KUBE_LOC=~/.kube/config # location of the kubeconfig file
-TAIL_SINCE="5m"	# time window for which logs are processed
-LOOPS=20
+# location of the kubeconfig file
+KUBE_LOC=~/.kube/config
+# time window for which logs are processed
+TAIL_SINCE="5m"
 
-### Dependencies
+### Dependencies (among other dependencies)
 kubectl, egrep, awk
