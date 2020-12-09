@@ -16,7 +16,7 @@ Kr makes use of the functions developed in Krawl and kubectl and adds extra func
 
 2. Change execution rights
 
-`$ chmod 0644 kr`
+`$ chmod 0744 kr`
 
 2. Move the program to a folder location which is in the user's path.
 
