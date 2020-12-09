@@ -1,15 +1,16 @@
-### kr
+### KR
 
-Kr is a tool for Kubernetes developers. It can be used to quickly collect and sumarize
-all error log entries generated in a Kubernetes cluster. These log entries would otherwise
+Kr is a tool for Kubernetes developers. It can be used to quickly collect and summarize
+all container error log entries generated in a Kubernetes cluster. These log entries would otherwise
 be individually accessible through kubectl (pod-by-pod).
 
 "kr" is based on the work made by Abhishek Tamrakar for "Krawl". 
 "Krawl" relies heavily on the functionalities of "kubectl".
-kr makes use of some of the functions developed in Krawl and adds extra functionality to them.
+Kr makes use of some of the functions developed in Krawl and adds extra functionality on top of them.
 
 ### How to use kr?
 1. Place the program to /usr/local/bin/kr and make sure you have execution rights.
+e.g. `curl -L -O https://github.com/osodevops/kr/main/kr`
 2. Invoke the program by typing "kr" at command line.
 3. Program collects and displays all container error log entries found for the
 EKS cluster which you are currently connected to.
