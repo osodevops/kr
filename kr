@@ -2,8 +2,8 @@
 # AUTHOR: Taneli Kantomaa
 # EMAIL: taneli.kantomaa@gmail.com
 # This work is continuation to the work Abhishek Tamrakar made with a tool
-# called "Krawl". "Krawl" relies heavily on the functionalities of another tool
-# called kubectl. This tool has the same dependency.
+# called "Krawl". "Krawl" relies heavily on the functionalities of kubectl. 
+# This tool has the same dependency.
 #
 # LICENSE: Copyright (C) 2020 Osodevops
 #
@@ -20,18 +20,24 @@
 #   limitations under the License.
 
 ### How to use this tool?
-# 1. Place the program (this file) to /usr/local/bin/kr and make sure you have
+# 1. Place the program (this file) to user path (e.g. /usr/local/bin/kr) and make sure you have
 # execution rights (e.g. chmod 0711 /usr/local/bin/kr).
 # 2. Invoke the program by typing "kr" at command line
 # 3. Program collects and displays all container error log entries found for the
 # EKS cluster which you are currently connected to.
-# 4. Program runs until it is stopped with "Ctrl+c"
+# 4. Program runs until it is stopped with "ctrl+c"
 # 5. If no error entries are found the program simply displays current date.
 
 ### User-definable variables
 KUBE_LOC=~/.kube/config
-TAIL_SINCE="5m"	# time window for log processing
-LOOPS=20
+# Time window for INITIAL log collection process (older entries are omitted).
+TAIL_SINCE="5m"
+# Time window for the CONTINUOUS process of looping through logs.
+# The optimal time window A) excludes all errors which are 
+# already processed (in any of the previously executed loops) and
+# B) includes all the new errors
+CONTINUOUS_TAIL_SINCE="30s"
+LOOPS=40
 KUBECTL=$(which kubectl)
 GET=$(which egrep)
 AWK=$(which awk)
@@ -73,7 +79,7 @@ then
 fi
 }
 
-# collect error entries
+# collect error entries (called initially)
 get_pod_errors()
 {
   for NAMESPACE in ${namespaces[@]}
@@ -96,7 +102,30 @@ get_pod_errors()
   done
 }
 
-# verify a kubeconfig is available
+# collect error entries continuously (called continuously from within the loop)
+get_pod_errors_continuously()
+{
+  for NAMESPACE in ${namespaces[@]}
+  do
+    while IFS=' ' read -r POD CONTAINERS
+    do
+      for CONTAINER in ${CONTAINERS//,/ }
+      do
+        COUNT=$($KUBECTL logs --since=$CONTINUOUS_TAIL_SINCE --tail=150 $POD -c $CONTAINER -n $NAMESPACE 2>/dev/null| \
+        $GET -c -i '^error|Error|ERROR|Warn|WARN')
+        if [ $COUNT -gt 0 ]
+        then
+            echo "POD  -  CONTAINER  -  NAMESPACE  -  COUNT"
+            echo "$POD $CONTAINER $NAMESPACE $COUNT"
+            echo $($KUBECTL logs --since=$CONTINUOUS_TAIL_SINCE --tail=150 $POD -c $CONTAINER -n $NAMESPACE 2>/dev/null| \
+            $GET -i '^error|Error|ERROR|Warn|WARN')
+        fi
+      done
+    done< <($KUBECTL get pods -n $NAMESPACE --ignore-not-found=true -o=custom-columns=NAME:.metadata.name,CONTAINERS:.spec.containers[*].name --no-headers=true)
+  done
+}
+
+# verify that a kubeconfig is available
 if [ $# -lt 1 ]; then
   if [ ! -e ${KUBE_LOC} -a ! -s ${KUBE_LOC} ]
   then
@@ -115,11 +144,12 @@ checkcmd KUBECTL
 get_namespaces
 get_pod_errors
 
-# program loops "get_pod_errors" function until stopped with "Ctrl+c"
+# Program loop for "get_pod_errors_continuously"-function. 
+# Time window for the CONTINUOUS process of looping through logs.
+# Program loops until stopped from command line with control characters "ctrl+c"
 for i in $(seq $LOOPS)
 do
   sleep 5
-  TAIL_SINCE="30s"
-  get_pod_errors
+  get_pod_errors_continuously
   echo `date`
 done

@@ -34,12 +34,14 @@ EKS cluster which you are currently connected to (specified in the kubeconfig-fi
 - If no error entries are found the program simply displays the current date
 
 ## User-definable variables
-#### location of the kubeconfig file
+#### Location of the kubeconfig file
 KUBE_LOC=~/.kube/config
-#### time window for which logs are processed
+#### The length of the time window for which log entries are included 
 TAIL_SINCE="5m"
 
 - this can be changed to, e.g. "30s" (for 30 seconds) or "1h" (for 1 hour)
 
 ## Main dependencies
-kubectl, egrep, awk
+- kubectl
+- egrep
+- awk
