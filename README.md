@@ -9,6 +9,9 @@ More sophisticated log processing, monitoring and alerting tools exist for more 
 "Krawl" relies heavily on the functionalities of "kubectl".
 Kr makes use of the functions developed in Krawl and kubectl and adds extra functionality on top of them.
 
+
+![](kr.gif)
+
 ## How to use kr?
 1. Clone the repo
 
