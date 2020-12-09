@@ -1,0 +1,125 @@
+#!/bin/bash
+# AUTHOR: Taneli Kantomaa
+# EMAIL: taneli.kantomaa@gmail.com
+# This work is continuation to the work Abhishek Tamrakar made with a tool
+# called "Krawl". "Krawl" relies heavily on the functionalities of another tool
+# called kubectl. This tool has the same dependency.
+#
+# LICENSE: Copyright (C) 2020 Osodevops
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+### How to use this tool?
+# 1. Place the program (this file) to /usr/local/bin/kr and make sure you have
+# execution rights (e.g. chmod 0711 /usr/local/bin/kr).
+# 2. Invoke the program by typing "kr" at command line
+# 3. Program collects and displays all container error log entries found for the
+# EKS cluster which you are currently connected to.
+# 4. Program runs until it is stopped with "Ctrl+c"
+# 5. If no error entries are found the program simply displays current date.
+
+### User-definable variables
+KUBE_LOC=~/.kube/config
+TAIL_SINCE="5m"	# time window for log processing
+LOOPS=20
+KUBECTL=$(which kubectl)
+GET=$(which egrep)
+AWK=$(which awk)
+red=$(tput setaf 1)
+normal=$(tput sgr0)
+
+################### program function definitions
+# info message wrapper
+info()
+{
+  printf '\n\e[34m%s\e[m: %s\n' "INFO" "$@"
+}
+
+# verify the command we are about to call is available
+checkcmd()
+{
+  #check if command exists
+  local cmd=$1
+  if [ -z "${!cmd}" ]
+  then
+    printf '\n\e[31m%s\e[m: %s\n' "ERROR"  "check if $1 is installed !!!"
+    exit 1
+  fi
+}
+
+# get kubernetes namespaces
+get_namespaces()
+{
+  namespaces=( \
+          $($KUBECTL get namespaces --ignore-not-found=true | \
+          $AWK '/Active/ {print $1}' \
+          ORS=" ") \
+          )
+# exit if namespaces are not found
+if [ ${#namespaces[@]} -eq 0 ]
+then
+  printf '\n\e[31m%s\e[m: %s\n' "ERROR"  "No namespaces found!!"
+  exit 1
+fi
+}
+
+# collect error entries
+get_pod_errors()
+{
+  for NAMESPACE in ${namespaces[@]}
+  do
+    while IFS=' ' read -r POD CONTAINERS
+    do
+      for CONTAINER in ${CONTAINERS//,/ }
+      do
+        COUNT=$($KUBECTL logs --since=$TAIL_SINCE --tail=150 $POD -c $CONTAINER -n $NAMESPACE 2>/dev/null| \
+        $GET -c -i '^error|Error|ERROR|Warn|WARN')
+        if [ $COUNT -gt 0 ]
+        then
+            echo "POD  -  CONTAINER  -  NAMESPACE  -  COUNT"
+            echo "$POD $CONTAINER $NAMESPACE $COUNT"
+            echo $($KUBECTL logs --since=$TAIL_SINCE --tail=150 $POD -c $CONTAINER -n $NAMESPACE 2>/dev/null| \
+            $GET -i '^error|Error|ERROR|Warn|WARN')
+        fi
+      done
+    done< <($KUBECTL get pods -n $NAMESPACE --ignore-not-found=true -o=custom-columns=NAME:.metadata.name,CONTAINERS:.spec.containers[*].name --no-headers=true)
+  done
+}
+
+# verify a kubeconfig is available
+if [ $# -lt 1 ]; then
+  if [ ! -e ${KUBE_LOC} -a ! -s ${KUBE_LOC} ]
+  then
+    info "A readable kube config location is required!!"
+  fi
+elif [ $# -eq 1 ]
+then
+  export KUBECONFIG=$1
+elif [ $# -gt 1 ]
+then
+  exit 1
+fi
+
+################### function calls
+checkcmd KUBECTL
+get_namespaces
+get_pod_errors
+
+# program loops "get_pod_errors" function until stopped with "Ctrl+c"
+for i in $(seq $LOOPS)
+do
+  sleep 5
+  TAIL_SINCE="30s"
+  get_pod_errors
+  echo `date`
+done
