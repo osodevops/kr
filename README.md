@@ -39,10 +39,19 @@ EKS cluster which you are currently connected to (specified in the kubeconfig-fi
 ## User-definable variables
 #### Location of the kubeconfig file
 KUBE_LOC=~/.kube/config
-#### The length of the time window for which log entries are included 
+#### The length of the time window for the INITIAL log scan
 TAIL_SINCE="5m"
 
-- this can be changed to, e.g. "30s" (for 30 seconds) or "1h" (for 1 hour)
+#### The length of the time window for a CONTINUOUS error tail
+CONTINUOUS_TAIL_SINCE="30s"
+
+
+The optimal time window
+
+A) excludes all errors which are already processed in any of the previously executed loops and
+
+B) includes all the errors occurred since the latest loop
+
 
 ## Main dependencies
 - kubectl
