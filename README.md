@@ -14,7 +14,11 @@ Kr makes use of the functions developed in Krawl and kubectl and adds extra func
 
 `$ git clone https://github.com/osodevops/kr.git`
 
-2. Place the program to /usr/local/bin/kr and make sure you have execution rights.
+2. Change execution rights
+
+`$ chmod 0644 kr`
+
+2. Move the program to a folder location which is in the user's path.
 
 `$ sudo mv kr /usr/local/bin/`
 
@@ -22,18 +26,20 @@ Kr makes use of the functions developed in Krawl and kubectl and adds extra func
 
 `$ kr`
 
-4. Program collects and displays all container error log entries found for the
-EKS cluster which you are currently connected to (specified in the kubeconfig-file).
+- Program collects and displays all container error log entries found from the
+EKS cluster which you are currently connected to (specified in the kubeconfig-file)
 
-5. Program runs until stopped with control characters "ctrl+c".
+- Program runs until stopped with control characters "ctrl+c"
 
-6. If no error entries are found the program simply displays the current date.
+- If no error entries are found the program simply displays the current date
 
 ## User-definable variables
 #### location of the kubeconfig file
 KUBE_LOC=~/.kube/config
 #### time window for which logs are processed
 TAIL_SINCE="5m"
+
+- this can be changed to, e.g. "30s" (for 30 seconds) or "1h" (for 1 hour)
 
 ## Main dependencies
 kubectl, egrep, awk
